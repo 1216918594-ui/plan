@@ -151,6 +151,17 @@ body{
 }
 .fab:active{transform:scale(0.9)}
 
+.paste-btn{
+  position:fixed;bottom:calc(var(--safe-bottom) + 96px);right:28px;
+  width:46px;height:46px;border-radius:50%;border:none;
+  background:linear-gradient(135deg,#302b63,#24243e);
+  color:#fff;font-size:20px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(48,43,99,0.4);
+  cursor:pointer;transition:all 0.2s;z-index:50;
+}
+.paste-btn:active{transform:scale(0.9)}
+
 /* ===== BOTTOM SHEET ===== */
 .overlay{
   position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;
@@ -333,6 +344,7 @@ textarea.form-input{resize:none;min-height:60px}
 
   <!-- FAB -->
   <button class="fab" onclick="openAdd()">+</button>
+  <button class="paste-btn" onclick="pasteImport()" title="粘贴导入">📋</button>
 
   <!-- Celebrate -->
   <div class="celebrate-bar" id="celebrate">全部完成！今天超棒的 ✨</div>
@@ -766,6 +778,36 @@ function confirmImport(){
 function skipImport(){
   document.getElementById('importBanner').classList.remove('show');
   pendingImport = null;
+}
+
+async function pasteImport(){
+  try{
+    const text = await navigator.clipboard.readText();
+    if(!text) { alert('剪贴板是空的，请先复制导入链接'); return; }
+    // Try to extract base64 from URL or raw text
+    let raw = text;
+    const match = text.match(/[?&]import=([^&\s]+)/);
+    if(match) raw = decodeURIComponent(match[1]);
+    // Decode base64
+    const json = JSON.parse(decodeURIComponent(escape(atob(raw))));
+    if(!json.date || !Array.isArray(json.tasks) || json.tasks.length===0){
+      alert('剪贴板内容不是有效的日程数据'); return;
+    }
+    pendingImport = json;
+    const d = parseDate(json.date);
+    const label = (d.getMonth()+1)+'月'+d.getDate()+'日';
+    document.getElementById('ibTitle').textContent = '📋 收到 '+json.tasks.length+' 条日程';
+    let preview = json.tasks.slice(0,3).map(t=>{
+      const time = t.timeStart ? t.timeStart+' ' : '';
+      return time+(t.emoji||'')+' '+t.title;
+    }).join('\n');
+    if(json.tasks.length>3) preview += '\n…还有 '+(json.tasks.length-3)+' 条';
+    document.getElementById('ibDesc').textContent = label+'\n'+preview;
+    document.getElementById('importBanner').classList.add('show');
+  }catch(e){
+    console.warn('Paste import error', e);
+    alert('导入失败：剪贴板内容无法识别\n请复制完整的导入链接再试');
+  }
 }
 
 // ===== INIT =====
