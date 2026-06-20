@@ -1165,9 +1165,31 @@ async function cloudSync(){
   }catch(e){ /* silent */ }
 }
 
+// ===== DEDUP CLEANUP =====
+function dedupCleanup(){
+  let changed = false;
+  Object.keys(data.tasks).forEach(date => {
+    const tasks = data.tasks[date];
+    if(!tasks || tasks.length < 2) return;
+    const seen = new Set();
+    const clean = [];
+    tasks.forEach(t => {
+      const key = t.title + '|' + (t.timeStart||'');
+      if(!seen.has(key)){ seen.add(key); clean.push(t); }
+      else { changed = true; }
+    });
+    if(clean.length !== tasks.length){
+      if(clean.length === 0) delete data.tasks[date];
+      else data.tasks[date] = clean;
+    }
+  });
+  if(changed) saveData();
+}
+
 // ===== INIT =====
 checkImport();
 preseedRecurring();
+dedupCleanup();
 render();
 cloudSync();
 
