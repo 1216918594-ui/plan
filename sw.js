@@ -5,7 +5,7 @@ sw.js
 
 
 
-const CACHE = 'daily-planner-v2';
+const CACHE = 'daily-planner-v3';
 const ASSETS = [
   '/',
   '/index.html',
