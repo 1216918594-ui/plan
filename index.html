@@ -46,6 +46,7 @@ body{
   transition:background 0.2s;flex-shrink:0;
 }
 .header-btn:active{background:var(--card-hover)}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 /* ===== DATE STRIP ===== */
 .date-strip{
@@ -375,6 +376,7 @@ textarea.form-input{resize:none;min-height:60px}
       <h1 id="headerDate"></h1>
       <div class="week" id="headerWeek"></div>
     </div>
+    <button class="header-btn" onclick="refreshApp()" title="更新">🔄</button>
     <button class="header-btn" onclick="showStats()">📊</button>
   </div>
 
@@ -1163,6 +1165,26 @@ async function cloudSync(){
     if(pending[todayStr()]) state.currentDate = todayStr();
     render();
   }catch(e){ /* silent */ }
+}
+
+// ===== REFRESH =====
+async function refreshApp(){
+  const btn = document.querySelector('.header-btn[onclick*="refreshApp"]');
+  if(btn) btn.style.animation = 'spin 0.5s linear';
+  try{
+    // Unregister service worker
+    if('serviceWorker' in navigator){
+      const reg = await navigator.serviceWorker.getRegistration();
+      if(reg) await reg.unregister();
+    }
+    // Clear all caches
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+    // Hard reload
+    window.location.reload(true);
+  }catch(e){
+    window.location.reload(true);
+  }
 }
 
 // ===== DEDUP CLEANUP =====
