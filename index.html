@@ -1118,10 +1118,51 @@ function preseedRecurring(){
   saveData();
 }
 
+// ===== CLOUD SYNC =====
+async function cloudSync(){
+  try{
+    const resp = await fetch('schedule.json?t='+Date.now(), {cache:'no-store'});
+    if(!resp.ok) return;
+    const schedule = await resp.json();
+    if(!schedule || !schedule.pending) return;
+    const sv = schedule.syncVersion || 0;
+    const last = data.lastSyncVersion || 0;
+    if(sv <= last) return; // No new data
+    // Import pending entries
+    const pending = schedule.pending;
+    Object.keys(pending).forEach(date => {
+      const entry = pending[date];
+      // Merge tasks
+      if(entry.tasks && entry.tasks.length > 0){
+        const existing = data.tasks[date] || [];
+        const existingIds = new Set(existing.map(t=>t.id));
+        entry.tasks.forEach(t => {
+          if(!t.id) t.id = uid();
+          if(!existingIds.has(t.id)){
+            t.done = false;
+            existing.push(t);
+          }
+        });
+        data.tasks[date] = existing;
+      }
+      // Merge diary
+      if(entry.diary && (entry.diary.text || entry.diary.mood)){
+        if(!data.diary[date]) data.diary[date] = entry.diary;
+      }
+    });
+    data.lastSyncVersion = sv;
+    saveData();
+    // If pending has today's date, navigate to it
+    if(pending[todayStr()]) state.currentDate = todayStr();
+    render();
+  }catch(e){ /* silent */ }
+}
+
 // ===== INIT =====
 checkImport();
 preseedRecurring();
 render();
+cloudSync();
 
 // ===== SERVICE WORKER =====
 if('serviceWorker' in navigator){
