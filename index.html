@@ -991,10 +991,12 @@ function confirmImport(){
   if(!pendingImport) return;
   const date = pendingImport.date;
   const existing = data.tasks[date] || [];
-  const existingIds = new Set(existing.map(t=>t.id));
   pendingImport.tasks.forEach(t=>{
     if(!t.id) t.id = uid();
-    if(!existingIds.has(t.id)){
+    const isDup = existing.some(e =>
+      e.title === t.title && (e.timeStart||'') === (t.timeStart||'')
+    );
+    if(!isDup){
       t.done = false;
       existing.push(t);
     }
@@ -1132,26 +1134,31 @@ async function cloudSync(){
     const pending = schedule.pending;
     Object.keys(pending).forEach(date => {
       const entry = pending[date];
-      // Merge tasks
+      // Merge tasks (dedup by title+time, not just ID)
       if(entry.tasks && entry.tasks.length > 0){
         const existing = data.tasks[date] || [];
-        const existingIds = new Set(existing.map(t=>t.id));
         entry.tasks.forEach(t => {
           if(!t.id) t.id = uid();
-          if(!existingIds.has(t.id)){
+          const isDup = existing.some(e =>
+            e.title === t.title && (e.timeStart||'') === (t.timeStart||'')
+          );
+          if(!isDup){
             t.done = false;
             existing.push(t);
           }
         });
         data.tasks[date] = existing;
       }
-      // Merge diary
+      // Merge diary (always overwrite from sync)
       if(entry.diary && (entry.diary.text || entry.diary.mood)){
-        if(!data.diary[date]) data.diary[date] = entry.diary;
+        data.diary[date] = entry.diary;
       }
     });
     data.lastSyncVersion = sv;
     saveData();
+    // Dismiss any pending import banner (cloud sync supersedes URL import)
+    document.getElementById('importBanner').classList.remove('show');
+    pendingImport = null;
     // If pending has today's date, navigate to it
     if(pending[todayStr()]) state.currentDate = todayStr();
     render();
