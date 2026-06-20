@@ -1,5 +1,5 @@
 {
-  "syncVersion": 2,
+  "syncVersion": 3,
   "pending": {
     "2026-06-20": {
       "tasks": [
@@ -34,6 +34,22 @@
           "color": "purple",
           "emoji": "💻",
           "desc": "看看有什么能写的软件"
+        },
+        {
+          "title": "看量化交易视频",
+          "timeStart": "21:30",
+          "timeEnd": "22:30",
+          "color": "blue",
+          "emoji": "📈",
+          "desc": "约1小时"
+        },
+        {
+          "title": "剪辑注意力分散视频",
+          "timeStart": "",
+          "timeEnd": "",
+          "color": "red",
+          "emoji": "🎬",
+          "desc": ""
         }
       ],
       "diary": {
