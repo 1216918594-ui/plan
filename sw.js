@@ -1,11 +1,4 @@
-
-
-sw.js
-· 文本
-
-
-
-const CACHE = 'daily-planner-v3';
+const CACHE = 'daily-planner-v4';
 const ASSETS = [
   '/',
   '/index.html',
