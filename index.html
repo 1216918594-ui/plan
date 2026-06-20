@@ -139,6 +139,48 @@ body{
 }
 .task-edit-btn:active{opacity:1}
 
+.recur-badge{
+  display:inline-block;font-size:10px;color:var(--text-dim);
+  background:rgba(255,255,255,0.06);border-radius:6px;
+  padding:1px 6px;margin-left:6px;vertical-align:middle;
+}
+.repeat-row{display:flex;gap:8px}
+.repeat-opt{
+  flex:1;padding:10px 0;border-radius:12px;border:1px solid rgba(255,255,255,0.08);
+  background:rgba(255,255,255,0.03);color:var(--text-dim);
+  font-size:13px;font-weight:500;cursor:pointer;text-align:center;
+  transition:all 0.2s;
+}
+.repeat-opt:active{transform:scale(0.97)}
+.repeat-opt.selected{border-color:var(--green);color:var(--green);background:rgba(67,233,123,0.08)}
+
+.diary-mood-row{display:flex;gap:8px;justify-content:center}
+.diary-mood{
+  width:48px;height:48px;border-radius:50%;border:2px solid rgba(255,255,255,0.08);
+  background:rgba(255,255,255,0.03);font-size:24px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all 0.2s;
+}
+.diary-mood:active{transform:scale(0.9)}
+.diary-mood.selected{border-color:var(--green);background:rgba(67,233,123,0.12);transform:scale(1.15)}
+.diary-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.diary-tag{
+  padding:4px 12px;border-radius:16px;border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.03);color:var(--text-dim);
+  font-size:12px;cursor:pointer;transition:all 0.2s;
+}
+.diary-tag.selected{border-color:var(--green);color:var(--green);background:rgba(67,233,123,0.08)}
+.diary-btn{
+  position:fixed;bottom:calc(var(--safe-bottom) + 152px);right:28px;
+  width:46px;height:46px;border-radius:50%;border:none;
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  color:#fff;font-size:20px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(102,126,234,0.3);
+  cursor:pointer;transition:all 0.2s;z-index:50;
+}
+.diary-btn:active{transform:scale(0.9)}
+
 /* Delete overlay */
 .task-delete{
   position:absolute;right:0;top:0;bottom:0;width:70px;
@@ -354,6 +396,7 @@ textarea.form-input{resize:none;min-height:60px}
   <!-- FAB -->
   <button class="fab" onclick="openAdd()">+</button>
   <button class="paste-btn" onclick="pasteImport()" title="粘贴导入">📋</button>
+  <button class="diary-btn" onclick="openDiary()" title="今日日记">📝</button>
 
   <!-- Celebrate -->
   <div class="celebrate-bar" id="celebrate">全部完成！今天超棒的 ✨</div>
@@ -401,9 +444,39 @@ textarea.form-input{resize:none;min-height:60px}
     <label class="form-label">图标</label>
     <div class="emoji-picker" id="emojiPicker"></div>
   </div>
+  <div class="form-row">
+    <label class="form-label">重复</label>
+    <div class="repeat-row">
+      <div class="repeat-opt selected" id="repeatNone" onclick="pickRepeat('none')">不重复</div>
+      <div class="repeat-opt" id="repeatDaily" onclick="pickRepeat('daily')">🔄 每天</div>
+    </div>
+  </div>
   <div class="btn-row">
     <button class="btn btn-cancel" onclick="closeSheet()">取消</button>
     <button class="btn btn-save" onclick="saveTask()">保存</button>
+  </div>
+</div>
+
+<!-- Diary Sheet -->
+<div class="sheet" id="diarySheet">
+  <div class="sheet-handle"></div>
+  <h2 id="diaryTitle">📝 今日日记</h2>
+  <div class="form-row">
+    <label class="form-label">今日心情</label>
+    <div class="diary-mood-row" id="diaryMoodRow"></div>
+  </div>
+  <div class="form-row">
+    <label class="form-label">今日反思</label>
+    <textarea class="form-input" id="diaryText" placeholder="今天有什么感悟？" maxlength="500" style="min-height:120px"></textarea>
+  </div>
+  <div class="form-row">
+    <label class="form-label">标签</label>
+    <input class="form-input" type="text" id="diaryTagInput" placeholder="输入标签后回车添加" maxlength="20" style="margin-bottom:8px">
+    <div class="diary-tags" id="diaryTags"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-cancel" onclick="closeSheet()">取消</button>
+    <button class="btn btn-save" onclick="saveDiaryUI()">保存</button>
   </div>
 </div>
 
@@ -441,7 +514,7 @@ const DOW = ['日','一','二','三','四','五','六'];
 const STORAGE_KEY = 'daily_planner_data';
 
 // ===== STATE =====
-let state = { currentDate: todayStr(), editingId: null };
+let state = { currentDate: todayStr(), editingId: null, editingRecurringId: null };
 let data = loadData();
 
 // ===== UTILS =====
@@ -464,8 +537,14 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 
 // ===== STORAGE =====
 function loadData(){
-  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {tasks:{}} }
-  catch(e){ return {tasks:{}} }
+  try{
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {tasks:{}};
+    if(!d.recurring) d.recurring=[];
+    if(!d.doneLog) d.doneLog={};
+    if(!d.diary) d.diary={};
+    return d;
+  }
+  catch(e){ return {tasks:{},recurring:[],doneLog:{},diary:{}} }
 }
 function saveData(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) }catch(e){}
@@ -477,6 +556,59 @@ function setTasks(date,tasks){
   if(tasks.length===0) delete data.tasks[date];
   else data.tasks[date]=tasks;
   saveData();
+}
+
+// ===== RECURRING TASKS =====
+function getRecurringTasks(date){
+  if(!data.recurring||data.recurring.length===0) return [];
+  const log=data.doneLog[date]||{};
+  return data.recurring.map(r=>({
+    ...r, id:'r_'+r.id, _recurringId:r.id,
+    done: !!log['r_'+r.id],
+    _isRecurring: true
+  }));
+}
+function getAllTasks(date){
+  const oneTime=getTasks(date);
+  const recurring=getRecurringTasks(date);
+  const all=[...oneTime,...recurring];
+  return all.sort((a,b)=>(a.timeStart||'99').localeCompare(b.timeStart||'99'));
+}
+function toggleRecurring(recurringId,date){
+  if(!data.doneLog[date]) data.doneLog[date]={};
+  const key='r_'+recurringId;
+  data.doneLog[date][key]=!data.doneLog[date][key];
+  saveData();
+}
+function addRecurring(task){
+  task.id=uid();
+  data.recurring.push(task);
+  saveData();
+}
+function removeRecurring(recurringId){
+  data.recurring=data.recurring.filter(r=>r.id!==recurringId);
+  // Clean doneLog
+  Object.keys(data.doneLog).forEach(d=>{
+    delete data.doneLog[d]['r_'+recurringId];
+  });
+  saveData();
+}
+
+// ===== DIARY =====
+function getDiary(date){
+  return data.diary[date]||null;
+}
+function saveDiary(date,entry){
+  if(!entry.text&&!entry.mood) { delete data.diary[date]; }
+  else { data.diary[date]=entry; }
+  saveData();
+}
+function getAllTags(){
+  const tagSet=new Set();
+  Object.values(data.diary).forEach(d=>{
+    if(d.tags) d.tags.forEach(t=>tagSet.add(t));
+  });
+  return [...tagSet].sort();
 }
 
 // ===== RENDER =====
@@ -502,20 +634,20 @@ function renderDateStrip(){
   for(let i=-7;i<=7;i++){
     const d=new Date(today);d.setDate(d.getDate()+i);
     const ds=fmtDate(d);
-    const tasks=getTasks(ds);
+    const tasks=getAllTasks(ds);
     const done=tasks.filter(t=>t.done).length;
     const isActive=ds===state.currentDate;
     const isToday=ds===todayStr();
     const hasTasks=tasks.length>0;
     const allDone=hasTasks&&done===tasks.length;
+    const hasDiary=!!data.diary[ds];
     html+=`<div class="date-item${isActive?' active':''}${isToday?' today':''}${hasTasks?' has-tasks':''}" onclick="goToDate('${ds}')">
-      <div class="dow">${DOW[d.getDay()]}</div>
+      <div class="dow">${DOW[d.getDay()]}${hasDiary?' 📝':''}</div>
       <div class="day">${d.getDate()}</div>
       <div class="dot-row"><div class="done-dot" style="${allDone?'opacity:1':''}"></div></div>
     </div>`;
   }
   strip.innerHTML=html;
-  // Scroll active into view
   setTimeout(()=>{
     const active=strip.querySelector('.active');
     if(active) active.scrollIntoView({inline:'center',behavior:'smooth'});
@@ -524,7 +656,7 @@ function renderDateStrip(){
 
 function renderTasks(){
   const list=document.getElementById('taskList');
-  const tasks=getTasks(state.currentDate);
+  const tasks=getAllTasks(state.currentDate);
 
   if(tasks.length===0){
     list.innerHTML=`<div class="empty">
@@ -552,15 +684,19 @@ function renderTasks(){
       </div>`;
     }
     const timeStr=(task.timeStart||'')+(task.timeEnd?' — '+task.timeEnd:'');
+    const recurBadge=task._isRecurring?'<span class="recur-badge">🔄每天</span>':'';
+    const editAction=task._isRecurring
+      ? `event.stopPropagation();editRecurring('${task._recurringId}')`
+      : `event.stopPropagation();openEdit('${task.id}')`;
     html+=`<div class="task-card c-${task.color}${task.done?' done':''}" data-id="${task.id}" onclick="toggleTask('${task.id}')">
       <div class="task-check"><div class="check-ring"><svg viewBox="0 0 24 24" fill="none" stroke="#0f0c29" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
       <div class="task-accent"></div>
       <div class="task-body">
         ${timeStr?'<div class="task-time">'+timeStr+'</div>':''}
-        <div class="task-title">${esc(task.title)}</div>
+        <div class="task-title">${esc(task.title)} ${recurBadge}</div>
         ${task.desc?'<div class="task-desc">'+esc(task.desc)+'</div>':''}
       </div>
-      <div class="task-emoji">${task.emoji||''}<button class="task-edit-btn" onclick="event.stopPropagation();openEdit('${task.id}')">✏️</button></div>
+      <div class="task-emoji">${task.emoji||''}<button class="task-edit-btn" onclick="${editAction}">✏️</button></div>
     </div>`;
   });
 
@@ -573,7 +709,8 @@ function renderTasks(){
       if(e.target.closest('.task-edit-btn')) return;
       timer=setTimeout(()=>{
         const id=card.dataset.id;
-        if(confirm('删除这个任务？')) deleteTask(id);
+        const msg=id.startsWith('r_')?'删除这个每天重复的任务？':'删除这个任务？';
+        if(confirm(msg)) deleteTask(id);
       },600);
     },{passive:true});
     card.addEventListener('touchend',()=>clearTimeout(timer));
@@ -582,7 +719,7 @@ function renderTasks(){
 }
 
 function renderProgress(){
-  const tasks=getTasks(state.currentDate);
+  const tasks=getAllTasks(state.currentDate);
   const total=tasks.length;
   const done=tasks.filter(t=>t.done).length;
   const pct=total>0?Math.round(done/total*100):0;
@@ -613,6 +750,14 @@ function navDate(delta){
 }
 
 function toggleTask(id){
+  if(id.startsWith('r_')){
+    const recurringId=id.slice(2);
+    toggleRecurring(recurringId,state.currentDate);
+    renderTasks();
+    renderProgress();
+    renderDateStrip();
+    return;
+  }
   const tasks=getTasks(state.currentDate);
   const task=tasks.find(t=>t.id===id);
   if(!task) return;
@@ -633,6 +778,11 @@ function toggleTask(id){
 }
 
 function deleteTask(id){
+  if(id.startsWith('r_')){
+    removeRecurring(id.slice(2));
+    render();
+    return;
+  }
   let tasks=getTasks(state.currentDate);
   tasks=tasks.filter(t=>t.id!==id);
   setTasks(state.currentDate,tasks);
@@ -642,6 +792,7 @@ function deleteTask(id){
 // ===== FORM =====
 function openAdd(){
   state.editingId=null;
+  state.editingRecurringId=null;
   document.getElementById('sheetTitle').textContent='添加任务';
   document.getElementById('fTimeStart').value='';
   document.getElementById('fTimeEnd').value='';
@@ -649,8 +800,11 @@ function openAdd(){
   document.getElementById('fDesc').value='';
   selectedColor='warm';
   selectedEmoji='☀️';
+  selectedRepeat='none';
   renderColorPicker();
   renderEmojiPicker();
+  renderRepeatPicker();
+  document.querySelector('.repeat-row').parentElement.style.display='';
   showSheet('taskSheet');
 }
 
@@ -659,6 +813,7 @@ function openEdit(id){
   const task=tasks.find(t=>t.id===id);
   if(!task) return;
   state.editingId=id;
+  state.editingRecurringId=null;
   document.getElementById('sheetTitle').textContent='编辑任务';
   document.getElementById('fTimeStart').value=task.timeStart||'';
   document.getElementById('fTimeEnd').value=task.timeEnd||'';
@@ -668,11 +823,33 @@ function openEdit(id){
   selectedEmoji=task.emoji||'☀️';
   renderColorPicker();
   renderEmojiPicker();
+  document.querySelector('.repeat-row').parentElement.style.display='none';
+  showSheet('taskSheet');
+}
+
+function editRecurring(recurringId){
+  const r=data.recurring.find(x=>x.id===recurringId);
+  if(!r) return;
+  state.editingId=null;
+  state.editingRecurringId=recurringId;
+  document.getElementById('sheetTitle').textContent='编辑重复任务';
+  document.getElementById('fTimeStart').value=r.timeStart||'';
+  document.getElementById('fTimeEnd').value=r.timeEnd||'';
+  document.getElementById('fTitle').value=r.title||'';
+  document.getElementById('fDesc').value=r.desc||'';
+  selectedColor=r.color||'warm';
+  selectedEmoji=r.emoji||'☀️';
+  selectedRepeat='daily';
+  renderColorPicker();
+  renderEmojiPicker();
+  renderRepeatPicker();
+  document.querySelector('.repeat-row').parentElement.style.display='';
   showSheet('taskSheet');
 }
 
 let selectedColor='warm';
 let selectedEmoji='☀️';
+let selectedRepeat='none';
 
 function renderColorPicker(){
   const el=document.getElementById('colorPicker');
@@ -685,18 +862,45 @@ function renderEmojiPicker(){
 function pickColor(id){ selectedColor=id; renderColorPicker() }
 function pickEmoji(e){ selectedEmoji=e; renderEmojiPicker() }
 
+function renderRepeatPicker(){
+  document.getElementById('repeatNone').className='repeat-opt'+(selectedRepeat==='none'?' selected':'');
+  document.getElementById('repeatDaily').className='repeat-opt'+(selectedRepeat==='daily'?' selected':'');
+}
+function pickRepeat(v){ selectedRepeat=v; renderRepeatPicker() }
+
 function saveTask(){
   const title=document.getElementById('fTitle').value.trim();
   if(!title){ document.getElementById('fTitle').focus(); return; }
 
-  const task={
-    id: state.editingId || uid(),
+  const taskData={
+    title,
     timeStart: document.getElementById('fTimeStart').value,
     timeEnd: document.getElementById('fTimeEnd').value,
-    title,
     desc: document.getElementById('fDesc').value.trim(),
     color: selectedColor,
     emoji: selectedEmoji,
+  };
+
+  // Edit recurring task
+  if(state.editingRecurringId){
+    const idx=data.recurring.findIndex(r=>r.id===state.editingRecurringId);
+    if(idx>=0){
+      Object.assign(data.recurring[idx], taskData);
+      saveData();
+    }
+    closeSheet(); render(); return;
+  }
+
+  // New task with repeat → add to recurring
+  if(!state.editingId && selectedRepeat==='daily'){
+    addRecurring(taskData);
+    closeSheet(); render(); return;
+  }
+
+  // One-time task (add or edit)
+  const task={
+    id: state.editingId || uid(),
+    ...taskData,
     done: false,
   };
 
@@ -722,6 +926,7 @@ function closeSheet(){
   document.getElementById('overlay').classList.remove('show');
   document.getElementById('taskSheet').classList.remove('show');
   document.getElementById('statsSheet').classList.remove('show');
+  document.getElementById('diarySheet').classList.remove('show');
 }
 
 function showStats(){
@@ -837,8 +1042,85 @@ async function pasteImport(){
   }
 }
 
+// ===== DIARY UI =====
+const MOODS = [{v:1,e:'😫'},{v:2,e:'😐'},{v:3,e:'🙂'},{v:4,e:'😊'},{v:5,e:'🤩'}];
+let diaryMood = 0;
+let diaryTags = [];
+
+function openDiary(){
+  const date = state.currentDate;
+  const d = parseDate(date);
+  document.getElementById('diaryTitle').textContent = '📝 '+(d.getMonth()+1)+'月'+d.getDate()+'日日记';
+  const entry = getDiary(date);
+  diaryMood = entry ? (entry.mood||0) : 0;
+  diaryTags = entry && entry.tags ? [...entry.tags] : [];
+  document.getElementById('diaryText').value = entry ? (entry.text||'') : '';
+  document.getElementById('diaryTagInput').value = '';
+  renderDiaryMoods();
+  renderDiaryTags();
+  // Bind enter key for tag input
+  const tagInput = document.getElementById('diaryTagInput');
+  tagInput.onkeydown = function(e){
+    if(e.key==='Enter'){
+      e.preventDefault();
+      const v = tagInput.value.trim();
+      if(v && !diaryTags.includes(v)){ diaryTags.push(v); renderDiaryTags(); }
+      tagInput.value='';
+    }
+  };
+  showSheet('diarySheet');
+}
+
+function renderDiaryMoods(){
+  const row = document.getElementById('diaryMoodRow');
+  row.innerHTML = MOODS.map(m =>
+    '<div class="diary-mood'+(diaryMood===m.v?' selected':'')+'" onclick="pickMood('+m.v+')">'+m.e+'</div>'
+  ).join('');
+}
+
+function pickMood(v){
+  diaryMood = diaryMood===v ? 0 : v;
+  renderDiaryMoods();
+}
+
+function renderDiaryTags(){
+  const el = document.getElementById('diaryTags');
+  const allTags = getAllTags();
+  // Merge current tags with history tags for display
+  const merged = [...new Set([...diaryTags, ...allTags])];
+  el.innerHTML = merged.map(t =>
+    '<div class="diary-tag'+(diaryTags.includes(t)?' selected':'')+'" onclick="toggleDiaryTag(\''+t.replace(/'/g,"\\'")+'\')">'+t+'</div>'
+  ).join('');
+}
+
+function toggleDiaryTag(tag){
+  const idx = diaryTags.indexOf(tag);
+  if(idx>=0) diaryTags.splice(idx,1);
+  else diaryTags.push(tag);
+  renderDiaryTags();
+}
+
+function saveDiaryUI(){
+  const text = document.getElementById('diaryText').value.trim();
+  const entry = { mood: diaryMood, text: text, tags: diaryTags };
+  saveDiary(state.currentDate, entry);
+  closeSheet();
+  render();
+}
+
+// ===== PRE-SEED RECURRING =====
+function preseedRecurring(){
+  if(data.recurring && data.recurring.length > 0) return;
+  data.recurring = [
+    { id: uid(), title:'早睡', timeStart:'22:30', timeEnd:'23:00', color:'night', emoji:'🌙', desc:'' },
+    { id: uid(), title:'自律给我自由', timeStart:'', timeEnd:'', color:'green', emoji:'💪', desc:'每日锻炼' }
+  ];
+  saveData();
+}
+
 // ===== INIT =====
 checkImport();
+preseedRecurring();
 render();
 
 // ===== SERVICE WORKER =====
