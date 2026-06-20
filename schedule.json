@@ -1,5 +1,5 @@
 {
-  "syncVersion": 3,
+  "syncVersion": 4,
   "pending": {
     "2026-06-20": {
       "tasks": [
@@ -49,7 +49,7 @@
           "timeEnd": "",
           "color": "red",
           "emoji": "🎬",
-          "desc": ""
+          "desc": "要去找爆款视频的节奏和钩子"
         }
       ],
       "diary": {
