@@ -1,4 +1,46 @@
 {
-  "syncVersion": 0,
-  "pending": {}
+  "syncVersion": 1,
+  "pending": {
+    "2026-06-20": {
+      "tasks": [
+        {
+          "title": "闭目养神",
+          "timeStart": "16:00",
+          "timeEnd": "17:00",
+          "color": "cyan",
+          "emoji": "😴",
+          "desc": ""
+        },
+        {
+          "title": "阅读研讨论文",
+          "timeStart": "17:00",
+          "timeEnd": "18:00",
+          "color": "blue",
+          "emoji": "📖",
+          "desc": ""
+        },
+        {
+          "title": "吃饭",
+          "timeStart": "18:00",
+          "timeEnd": "19:30",
+          "color": "warm",
+          "emoji": "🍲",
+          "desc": "没有具体规划，随意吃"
+        },
+        {
+          "title": "AI Agent 工作学习",
+          "timeStart": "20:00",
+          "timeEnd": "21:30",
+          "color": "purple",
+          "emoji": "💻",
+          "desc": "看看有什么能写的软件"
+        }
+      ],
+      "diary": {
+        "mood": 4,
+        "text": "今天心情挺好的，因为自己给自己开发了个软件。",
+        "tags": ["编程", "成就感"]
+      }
+    }
+  }
 }
