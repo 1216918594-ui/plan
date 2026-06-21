@@ -24,19 +24,22 @@
   --green:#43e97b;--green2:#38f9d7;
   --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
 }
-html{
-  background:linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
-  height:100%;
-}
-html::before{
-  content:'';position:fixed;left:0;right:0;top:0;bottom:calc(-1 * var(--safe-bottom));
-  background:inherit;z-index:-1;
-}
+html{height:100%}
 body{
-  height:100%;overflow:hidden;
+  min-height:100%;overflow:hidden;position:relative;
   font-family:'Noto Sans SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
+  background-attachment:fixed;
   color:var(--text);
   -webkit-font-smoothing:antialiased;
+}
+body::after{
+  content:'';position:fixed;left:0;right:0;
+  top:calc(100% - var(--safe-bottom));
+  bottom:calc(-1 * var(--safe-bottom));
+  background:linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
+  background-attachment:fixed;
+  z-index:0;pointer-events:none;
 }
 #app{height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
 
@@ -414,16 +417,16 @@ textarea.form-input{resize:none;min-height:60px}
   <!-- Task List -->
   <div class="task-list" id="taskList"></div>
 
-  <!-- Floating Buttons -->
-  <div class="fab-group">
-    <button class="fab-mini" onclick="openVoice()" title="语音输入">🎙️</button>
-    <button class="fab-mini" onclick="openDiary()" title="今日日记">📝</button>
-    <button class="fab" onclick="openAdd()">+</button>
-  </div>
-
   <!-- Celebrate -->
   <div class="celebrate-bar" id="celebrate">全部完成！今天超棒的 ✨</div>
 
+</div>
+
+<!-- Floating Buttons (outside #app for viewport-relative positioning) -->
+<div class="fab-group">
+  <button class="fab-mini" onclick="openVoice()" title="语音输入">🎙️</button>
+  <button class="fab-mini" onclick="openDiary()" title="今日日记">📝</button>
+  <button class="fab" onclick="openAdd()">+</button>
 </div>
 
 <!-- Overlay -->
