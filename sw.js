@@ -1,4 +1,4 @@
-const CACHE = 'daily-planner-v21';
+const CACHE = 'daily-planner-v22';
 const ASSETS = [
   '/',
   '/index.html',
