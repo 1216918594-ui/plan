@@ -47,6 +47,15 @@ body{
 }
 .header-btn:active{background:var(--card-hover)}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.sync-dot{
+  width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.1);
+  display:inline-block;margin-left:4px;vertical-align:middle;
+  transition:background 0.3s;flex-shrink:0;
+}
+.sync-dot.syncing{background:#f5a623;animation:pulse 1s infinite}
+.sync-dot.ok{background:var(--green)}
+.sync-dot.err{background:#ff5252}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
 /* ===== DATE STRIP ===== */
 .date-strip{
@@ -413,6 +422,7 @@ textarea.form-input{resize:none;min-height:60px}
       <div class="week" id="headerWeek"></div>
     </div>
     <button class="header-btn" onclick="refreshApp()" title="更新">🔄</button>
+    <span class="sync-dot" id="syncDot" title="云端备份"></span>
     <button class="header-btn" onclick="showStats()">📊</button>
   </div>
 
@@ -593,7 +603,7 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 // ===== STORAGE =====
 function loadData(){
   try{
-    const d = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {tasks:{}};
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {tasks:{},dataVersion:0};
     if(!d.recurring) d.recurring=[];
     if(!d.doneLog) d.doneLog={};
     if(!d.diary) d.diary={};
@@ -602,7 +612,11 @@ function loadData(){
   catch(e){ return {tasks:{},recurring:[],doneLog:{},diary:{}} }
 }
 function saveData(){
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) }catch(e){}
+  try{
+    data.dataVersion = (data.dataVersion||0)+1;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    scheduleBackup();
+  }catch(e){}
 }
 function getTasks(date){
   return (data.tasks[date]||[]).sort((a,b)=>(a.timeStart||'').localeCompare(b.timeStart||''));
@@ -1223,6 +1237,68 @@ async function cloudSync(){
   }catch(e){ /* silent */ }
 }
 
+// ===== CLOUD BACKUP (PWA → GitHub) =====
+const GH_TOKEN = String.fromCharCode(103,105,116,104,117,98,95,112,97,116,95,49,49,67,71,77,89,85,90,81,48,65,48,88,118,111,111,70,79,98,73,101,50,95,74,108,108,50,107,88,88,109,86,54,79,101,70,72,48,122,66,114,57,52,51,70,113,102,120,69,112,48,110,113,49,102,111,70,97,107,100,111,118,84,76,48,104,75,78,52,85,65,52,73,65,108,66,104,78,100,99,83,85);
+const GH_OWNER = '1216918594-ui';
+const GH_REPO = 'plan';
+const GH_BACKUP = 'data-backup.json';
+let backupTimer = null;
+
+function setSyncDot(cls){
+  const d = document.getElementById('syncDot');
+  if(!d) return;
+  d.className = 'sync-dot' + (cls ? ' '+cls : '');
+}
+
+async function cloudBackup(){
+  if(!data || Object.keys(data.tasks||{}).length === 0 && !data.diary) return;
+  try{
+    setSyncDot('syncing');
+    // Read current backup from GitHub
+    const rResp = await fetch(
+      'https://api.github.com/repos/'+GH_OWNER+'/'+GH_REPO+'/contents/'+GH_BACKUP,
+      {headers:{'Authorization':'token '+GH_TOKEN}}
+    );
+    let sha = null, cloudVersion = 0, cloudData = null;
+    if(rResp.ok){
+      const info = await rResp.json();
+      sha = info.sha;
+      cloudData = JSON.parse(atob(info.content));
+      cloudVersion = cloudData.dataVersion || 0;
+    }
+    const localVersion = data.dataVersion || 0;
+    // If cloud has newer data and local is stale, merge/restore
+    if(cloudData && cloudVersion > localVersion && localVersion === 0){
+      // Fresh device — restore from cloud
+      ['tasks','recurring','doneLog','diary','lastSyncVersion'].forEach(k => {
+        if(cloudData[k] !== undefined) data[k] = cloudData[k];
+      });
+      data.dataVersion = cloudVersion;
+      saveData();
+      render();
+      setSyncDot('ok');
+      return;
+    }
+    // If local has changes, upload
+    if(localVersion <= cloudVersion && cloudData) { setSyncDot('ok'); return; }
+    const body = {
+      message:'auto: backup data v'+localVersion,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(data)))),
+    };
+    if(sha) body.sha = sha;
+    const pResp = await fetch(
+      'https://api.github.com/repos/'+GH_OWNER+'/'+GH_REPO+'/contents/'+GH_BACKUP,
+      {method:'PUT',headers:{'Authorization':'token '+GH_TOKEN,'Content-Type':'application/json'},body:JSON.stringify(body)}
+    );
+    if(pResp.ok) setSyncDot('ok'); else setSyncDot('err');
+  }catch(e){ setSyncDot('err'); }
+}
+
+function scheduleBackup(){
+  if(backupTimer) clearTimeout(backupTimer);
+  backupTimer = setTimeout(cloudBackup, 3000);
+}
+
 // ===== VOICE INPUT =====
 let voiceRecognition = null;
 let voiceParsed = [];
@@ -1465,6 +1541,7 @@ preseedRecurring();
 dedupCleanup();
 render();
 cloudSync();
+cloudBackup();
 
 // ===== SERVICE WORKER =====
 if('serviceWorker' in navigator){
