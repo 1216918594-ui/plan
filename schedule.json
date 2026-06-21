@@ -1,47 +1,71 @@
 {
-  "syncVersion": 5,
+  "syncVersion": 6,
   "pending": {
     "2026-06-22": {
       "tasks": [
         {
-          "title": "起床 + 量化交易视频",
+          "title": "晨跑/运动",
           "timeStart": "08:00",
           "timeEnd": "09:00",
-          "color": "blue",
-          "emoji": "📈",
-          "desc": "看1小时量化交易视频"
+          "color": "green",
+          "emoji": "🏃",
+          "desc": "跑步或运动1小时"
         },
         {
-          "title": "早餐",
+          "title": "健身房",
           "timeStart": "09:00",
-          "timeEnd": "09:30",
+          "timeEnd": "10:00",
+          "color": "green",
+          "emoji": "💪",
+          "desc": ""
+        },
+        {
+          "title": "做饭/吃饭",
+          "timeStart": "10:30",
+          "timeEnd": "11:30",
           "color": "warm",
           "emoji": "🍞",
-          "desc": "冰箱里的面包 + 准备虾"
+          "desc": "清淡自己做，或恰巴塔+冰箱剩鸡肉"
         },
         {
-          "title": "上课",
-          "timeStart": "10:00",
-          "timeEnd": "12:00",
+          "title": "Codex 编程学习",
+          "timeStart": "11:30",
+          "timeEnd": "13:30",
+          "color": "purple",
+          "emoji": "💻",
+          "desc": "2小时"
+        },
+        {
+          "title": "量化交易学习",
+          "timeStart": "14:00",
+          "timeEnd": "16:00",
+          "color": "blue",
+          "emoji": "📈",
+          "desc": "2小时"
+        },
+        {
+          "title": "读书",
+          "timeStart": "16:00",
+          "timeEnd": "17:00",
           "color": "blue",
           "emoji": "📖",
-          "desc": ""
+          "desc": "1小时"
         },
         {
-          "title": "上课",
-          "timeStart": "13:45",
-          "timeEnd": "18:00",
-          "color": "blue",
-          "emoji": "📖",
-          "desc": "空闲时看看书"
-        },
-        {
-          "title": "游泳",
-          "timeStart": "19:00",
-          "timeEnd": "20:30",
+          "title": "背英语",
+          "timeStart": "17:00",
+          "timeEnd": "17:30",
           "color": "teal",
-          "emoji": "🏊",
-          "desc": ""
+          "emoji": "🔤",
+          "desc": "半小时"
+        },
+        {
+          "title": "应酬",
+          "timeStart": "19:00",
+          "timeEnd": "",
+          "color": "orange",
+          "emoji": "🍻",
+          "desc": "出去应酬"
         }
       ],
       "diary": null
