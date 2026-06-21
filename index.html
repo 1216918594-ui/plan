@@ -93,7 +93,7 @@ body{
 
 /* ===== TASK LIST ===== */
 .task-list{
-  flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 16px 90px;
+  flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 16px 100px;
   -webkit-overflow-scrolling:touch;
 }
 .category-label{
@@ -219,37 +219,38 @@ body{
   opacity:0;pointer-events:none;transition:opacity 0.2s;
 }
 
-/* ===== BOTTOM TOOLBAR ===== */
-.bottom-toolbar{
-  position:fixed;bottom:0;left:0;right:0;z-index:50;
-  display:flex;align-items:center;justify-content:space-around;
-  padding:10px 24px calc(var(--safe-bottom) + 10px);
-  background:rgba(15,12,41,0.85);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  border-top:1px solid rgba(255,255,255,0.06);
+/* ===== FLOATING BUTTONS ===== */
+.fab-group{
+  position:fixed;right:20px;z-index:50;
+  display:flex;flex-direction:column;gap:12px;align-items:center;
+  bottom:calc(var(--safe-bottom) + 24px);
 }
-.bottom-toolbar::after{
-  content:'';position:fixed;bottom:0;left:0;right:0;
+.fab{
+  width:56px;height:56px;border-radius:50%;border:none;
+  background:linear-gradient(135deg,var(--green),var(--green2));
+  color:var(--bg1);font-size:28px;font-weight:400;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 20px rgba(67,233,123,0.3);
+  cursor:pointer;transition:all 0.2s;
+}
+.fab:active{transform:scale(0.9)}
+.fab-mini{
+  width:44px;height:44px;border-radius:50%;border:none;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  color:var(--text);font-size:20px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,0.3);
+  cursor:pointer;transition:all 0.2s;
+}
+.fab-mini:active{transform:scale(0.9);background:rgba(255,255,255,0.12)}
+
+/* Safe area cover */
+.safe-cover{
+  position:fixed;bottom:0;left:0;right:0;z-index:49;
   height:var(--safe-bottom);
-  background:rgba(15,12,41,0.85);
-  z-index:-1;
+  background:var(--bg1);
 }
-.toolbar-btn{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:2px;border:none;background:none;
-  color:var(--text-dim);font-size:22px;
-  cursor:pointer;padding:6px 18px;border-radius:14px;
-  transition:all 0.2s;min-width:56px;
-}
-.toolbar-btn:active{background:rgba(255,255,255,0.06);transform:scale(0.92)}
-.toolbar-btn .tb-label{font-size:10px;font-weight:500;letter-spacing:0.5px}
-.toolbar-btn.primary{
-  color:var(--bg1);background:linear-gradient(135deg,var(--green),var(--green2));
-  width:52px;height:52px;border-radius:50%;font-size:28px;padding:0;
-  box-shadow:0 4px 16px rgba(67,233,123,0.3);
-  flex-direction:row;
-}
-.toolbar-btn.primary:active{transform:scale(0.9);box-shadow:0 2px 8px rgba(67,233,123,0.2)}
 
 /* ===== BOTTOM SHEET ===== */
 .overlay{
@@ -413,12 +414,15 @@ textarea.form-input{resize:none;min-height:60px}
   <!-- Task List -->
   <div class="task-list" id="taskList"></div>
 
-  <!-- Bottom Toolbar -->
-  <nav class="bottom-toolbar">
-    <button class="toolbar-btn" onclick="openVoice()" title="语音输入">🎙️<span class="tb-label">语音</span></button>
-    <button class="toolbar-btn primary" onclick="openAdd()">+</button>
-    <button class="toolbar-btn" onclick="openDiary()" title="今日日记">📝<span class="tb-label">日记</span></button>
-  </nav>
+  <!-- Floating Buttons -->
+  <div class="fab-group">
+    <button class="fab-mini" onclick="openVoice()" title="语音输入">🎙️</button>
+    <button class="fab-mini" onclick="openDiary()" title="今日日记">📝</button>
+    <button class="fab" onclick="openAdd()">+</button>
+  </div>
+
+  <!-- Safe Area Cover -->
+  <div class="safe-cover"></div>
 
   <!-- Celebrate -->
   <div class="celebrate-bar" id="celebrate">全部完成！今天超棒的 ✨</div>
@@ -694,7 +698,7 @@ function renderTasks(){
     list.innerHTML=`<div class="empty">
       <div class="empty-icon">📋</div>
       <div class="empty-text">${state.currentDate===todayStr()?'今天还没有安排':'这天还没有安排'}</div>
-      <div class="empty-hint">点下方 + 添加任务</div>
+      <div class="empty-hint">点右下角 + 添加任务</div>
     </div>`;
     return;
   }
