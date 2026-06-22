@@ -641,6 +641,9 @@ textarea.form-input{resize:none;min-height:60px}
     <textarea class="chat-input" id="chatInput" placeholder="说点什么..." rows="1" onkeydown="chatKeyDown(event)"></textarea>
     <button class="chat-send" id="chatSendBtn" onclick="sendChatMessage()">↑</button>
   </div>
+  <div class="btn-row" style="margin-top:10px">
+    <button class="btn btn-save" onclick="closeSheet()" style="background:var(--card);color:var(--text);font-size:13px">关闭</button>
+  </div>
 </div>
 
 <!-- AI Review Sheet -->
@@ -1093,6 +1096,9 @@ function closeSheet(){
   document.getElementById('statsSheet').classList.remove('show');
   document.getElementById('diarySheet').classList.remove('show');
   document.getElementById('voiceSheet').classList.remove('show');
+  document.getElementById('aiSettingsSheet').classList.remove('show');
+  document.getElementById('aiChatSheet').classList.remove('show');
+  document.getElementById('aiReviewSheet').classList.remove('show');
   if(voiceRecognition){ try{voiceRecognition.stop()}catch(e){} voiceRecognition=null; }
   document.getElementById('voiceMic').classList.remove('recording');
 }
