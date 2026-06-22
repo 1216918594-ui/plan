@@ -376,6 +376,89 @@ textarea.form-input{resize:none;min-height:60px}
 .c-cyan .task-time{color:#89f7fe}
 .c-peach .task-accent{background:linear-gradient(180deg,#ffecd2,#fcb69f)}
 .c-peach .task-time{color:#fcb69f}
+
+/* ===== AI FEATURES ===== */
+.ai-menu{
+  position:fixed;right:80px;z-index:51;
+  display:flex;flex-direction:column;gap:8px;
+  bottom:calc(var(--safe-bottom) + 24px);
+  opacity:0;pointer-events:none;transition:all 0.25s;
+  transform:translateX(10px);
+}
+.ai-menu.show{opacity:1;pointer-events:auto;transform:translateX(0)}
+.ai-menu-btn{
+  padding:10px 16px;border-radius:20px;border:none;
+  background:rgba(255,255,255,0.1);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  color:var(--text);font-size:14px;white-space:nowrap;
+  display:flex;align-items:center;gap:8px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.3);cursor:pointer;transition:all 0.2s;
+}
+.ai-menu-btn:active{transform:scale(0.95);background:rgba(255,255,255,0.15)}
+.ai-menu-btn .ai-icon{font-size:18px}
+
+/* AI Chat */
+.chat-messages{
+  max-height:50vh;overflow-y:auto;padding:8px 0;
+  display:flex;flex-direction:column;gap:10px;
+}
+.chat-bubble{
+  max-width:85%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.6;
+  word-wrap:break-word;white-space:pre-wrap;
+}
+.chat-bubble.user{
+  align-self:flex-end;background:linear-gradient(135deg,var(--green),var(--green2));
+  color:var(--bg1);border-bottom-right-radius:4px;
+}
+.chat-bubble.ai{
+  align-self:flex-start;background:rgba(255,255,255,0.08);
+  color:var(--text);border-bottom-left-radius:4px;
+}
+.chat-bubble.ai.loading{opacity:0.5;font-style:italic}
+.chat-input-row{
+  display:flex;gap:8px;margin-top:12px;
+}
+.chat-input{
+  flex:1;padding:10px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.05);color:var(--text);font-size:14px;
+  font-family:inherit;outline:none;resize:none;min-height:40px;max-height:100px;
+}
+.chat-input:focus{border-color:rgba(67,233,123,0.4)}
+.chat-send{
+  width:40px;height:40px;border-radius:50%;border:none;
+  background:linear-gradient(135deg,var(--green),var(--green2));
+  color:var(--bg1);font-size:18px;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.chat-send:active{transform:scale(0.9)}
+.chat-send:disabled{opacity:0.4;cursor:not-allowed}
+
+/* AI Review Card */
+.ai-review{
+  background:rgba(255,255,255,0.04);border-radius:16px;padding:16px;margin:12px 0;
+  border:1px solid rgba(255,255,255,0.06);
+}
+.ai-review-title{font-size:15px;font-weight:700;color:#fff;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.ai-review-body{font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap}
+.ai-review-body .highlight{color:var(--green);font-weight:600}
+
+/* AI loading dots */
+@keyframes dotPulse{0%,80%,100%{opacity:0.2}40%{opacity:1}}
+.ai-dots span{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--text-dim);margin:0 2px;animation:dotPulse 1.4s infinite}
+.ai-dots span:nth-child(2){animation-delay:0.2s}
+.ai-dots span:nth-child(3){animation-delay:0.4s}
+
+/* AI settings */
+.ai-key-row{display:flex;gap:8px;align-items:center}
+.ai-key-input{
+  flex:1;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.05);color:var(--text);font-size:14px;
+  font-family:monospace;outline:none;
+}
+.ai-key-input:focus{border-color:rgba(67,233,123,0.4)}
+.ai-status{font-size:12px;margin-top:6px}
+.ai-status.ok{color:var(--green)}
+.ai-status.err{color:#ff5252}
+.ai-status.none{color:var(--text-dim)}
 </style>
 </head>
 <body>
@@ -413,8 +496,18 @@ textarea.form-input{resize:none;min-height:60px}
 
 </div>
 
+<!-- AI Menu (outside #app) -->
+<div class="ai-menu" id="aiMenu">
+  <button class="ai-menu-btn" onclick="openAiVoice()"><span class="ai-icon">🎙️</span> AI 语音解析</button>
+  <button class="ai-menu-btn" onclick="openAiReview()"><span class="ai-icon">📋</span> 今日复盘</button>
+  <button class="ai-menu-btn" onclick="openAiSchedule()"><span class="ai-icon">📅</span> 智能排日程</button>
+  <button class="ai-menu-btn" onclick="openAiChat()"><span class="ai-icon">💬</span> AI 聊聊</button>
+  <button class="ai-menu-btn" onclick="openAiSettings()"><span class="ai-icon">⚙️</span> API 设置</button>
+</div>
+
 <!-- Floating Buttons (outside #app for viewport-relative positioning) -->
 <div class="fab-group">
+  <button class="fab-mini" onclick="toggleAiMenu()" title="AI 助手">🤖</button>
   <button class="fab-mini" onclick="openVoice()" title="语音输入">🎙️</button>
   <button class="fab-mini" onclick="openDiary()" title="今日日记">📝</button>
   <button class="fab" onclick="openAdd()">+</button>
@@ -515,6 +608,51 @@ textarea.form-input{resize:none;min-height:60px}
   </div>
   <div class="btn-row">
     <button class="btn btn-save" onclick="closeStats()" style="background:var(--card);color:var(--text)">关闭</button>
+  </div>
+</div>
+
+<!-- AI Settings Sheet -->
+<div class="sheet" id="aiSettingsSheet">
+  <div class="sheet-handle"></div>
+  <h2>🤖 AI 设置</h2>
+  <div class="form-row">
+    <label class="form-label">DeepSeek API Key</label>
+    <div class="ai-key-row">
+      <input class="ai-key-input" type="password" id="aiKeyInput" placeholder="sk-...">
+      <button class="btn btn-save" onclick="saveAiKey()" style="flex-shrink:0;padding:8px 16px">保存</button>
+    </div>
+    <div class="ai-status none" id="aiKeyStatus">在 platform.deepseek.com 获取 API Key</div>
+  </div>
+  <div style="font-size:12px;color:var(--text-dim);line-height:1.8;margin-top:8px">
+    你的 Key 仅保存在本地浏览器中，不会上传到任何服务器。<br>
+    DeepSeek API 按用量计费，日常使用每月仅需几元。
+  </div>
+  <div class="btn-row" style="margin-top:16px">
+    <button class="btn btn-save" onclick="closeSheet()" style="background:var(--card);color:var(--text)">关闭</button>
+  </div>
+</div>
+
+<!-- AI Chat Sheet -->
+<div class="sheet" id="aiChatSheet">
+  <div class="sheet-handle"></div>
+  <h2 id="aiChatTitle">💬 AI 聊聊</h2>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-input-row">
+    <textarea class="chat-input" id="chatInput" placeholder="说点什么..." rows="1" onkeydown="chatKeyDown(event)"></textarea>
+    <button class="chat-send" id="chatSendBtn" onclick="sendChatMessage()">↑</button>
+  </div>
+</div>
+
+<!-- AI Review Sheet -->
+<div class="sheet" id="aiReviewSheet">
+  <div class="sheet-handle"></div>
+  <h2>📋 今日复盘</h2>
+  <div id="aiReviewContent">
+    <div style="text-align:center;color:var(--text-dim);padding:20px">点击下方按钮生成今日复盘</div>
+  </div>
+  <div class="btn-row" style="margin-top:16px">
+    <button class="btn btn-cancel" onclick="closeSheet()">关闭</button>
+    <button class="btn btn-save" id="aiReviewBtn" onclick="generateAiReview()">生成复盘</button>
   </div>
 </div>
 
@@ -1405,6 +1543,559 @@ function dedupCleanup(){
     }
   });
   if(changed) saveData();
+}
+
+// ===== DEEPSEEK AI =====
+const DS_KEY = 'deepseek_api_key';
+const DS_URL = 'https://api.deepseek.com/chat/completions';
+let aiMenuOpen = false;
+let chatHistory = [];
+let chatMode = 'chat'; // 'chat' | 'schedule'
+
+function getAiKey(){ return localStorage.getItem(DS_KEY) || '' }
+function hasAiKey(){ return !!getAiKey() }
+
+function checkAiKey(){
+  const key = getAiKey();
+  const status = document.getElementById('aiKeyStatus');
+  if(key){
+    status.textContent = '✓ 已配置 API Key';
+    status.className = 'ai-status ok';
+  } else {
+    status.textContent = '在 platform.deepseek.com 获取 API Key';
+    status.className = 'ai-status none';
+  }
+}
+
+function saveAiKey(){
+  const input = document.getElementById('aiKeyInput');
+  const key = input.value.trim();
+  if(key){
+    localStorage.setItem(DS_KEY, key);
+    input.value = '';
+    checkAiKey();
+  } else {
+    localStorage.removeItem(DS_KEY);
+    checkAiKey();
+  }
+}
+
+function openAiSettings(){
+  closeAiMenu();
+  const input = document.getElementById('aiKeyInput');
+  input.value = '';
+  checkAiKey();
+  showSheet('aiSettingsSheet');
+}
+
+async function callDeepSeek(messages, onChunk){
+  const key = getAiKey();
+  if(!key) throw new Error('请先在 AI 设置中配置 DeepSeek API Key');
+  const body = {
+    model: 'deepseek-chat',
+    messages: messages,
+    temperature: 0.7,
+    stream: !!onChunk
+  };
+  if(onChunk){
+    const resp = await fetch(DS_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body: JSON.stringify(body)
+    });
+    if(!resp.ok){
+      const err = await resp.text();
+      throw new Error('API 请求失败: ' + resp.status + ' ' + err);
+    }
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    let buffer = '';
+    while(true){
+      const {done, value} = await reader.read();
+      if(done) break;
+      buffer += decoder.decode(value, {stream:true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for(const line of lines){
+        const trimmed = line.trim();
+        if(!trimmed || !trimmed.startsWith('data:')) continue;
+        const data = trimmed.slice(5).trim();
+        if(data === '[DONE]') continue;
+        try{
+          const parsed = JSON.parse(data);
+          const delta = parsed.choices?.[0]?.delta?.content || '';
+          if(delta){
+            fullText += delta;
+            onChunk(fullText, delta);
+          }
+        }catch(e){}
+      }
+    }
+    return fullText;
+  } else {
+    const resp = await fetch(DS_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body: JSON.stringify(body)
+    });
+    if(!resp.ok){
+      const err = await resp.text();
+      throw new Error('API 请求失败: ' + resp.status + ' ' + err);
+    }
+    const result = await resp.json();
+    return result.choices?.[0]?.message?.content || '';
+  }
+}
+
+// ===== AI MENU =====
+function toggleAiMenu(){
+  aiMenuOpen = !aiMenuOpen;
+  document.getElementById('aiMenu').classList.toggle('show', aiMenuOpen);
+}
+function closeAiMenu(){
+  aiMenuOpen = false;
+  document.getElementById('aiMenu').classList.remove('show');
+}
+
+// ===== AI VOICE PARSING =====
+function openAiVoice(){
+  closeAiMenu();
+  if(!hasAiKey()){
+    openAiSettings();
+    return;
+  }
+  openVoice();
+}
+
+async function aiParseVoiceText(text){
+  const today = state.currentDate;
+  const colorIds = COLORS.map(c=>c.id).join(',');
+  const systemPrompt = `你是一个日程解析助手。用户会用自然语言描述今天的安排，请解析成结构化的JSON。
+今天日期: ${today}
+可用颜色分类: ${colorIds}
+颜色说明: warm=日常/吃饭, green=运动/锻炼, blue=学习/读书, red=重点/紧急, teal=休息, orange=社交/聚会, purple=编程/工作, night=睡眠, cyan=休息/午睡, peach=轻松活动
+
+请严格输出JSON数组，每个元素格式:
+{"type":"task","title":"标题(10字以内)","timeStart":"HH:MM或空","timeEnd":"HH:MM或空","color":"颜色id","emoji":"一个emoji","desc":"简短描述或空"}
+或
+{"type":"diary","text":"感悟内容","mood":0-5,"tags":["标签1"]}
+
+规则:
+1. 时间是24小时制HH:MM格式
+2. 如果没有明确时间，timeStart和timeEnd留空
+3. "X点半"表示X:30
+4. 根据内容自动匹配合适的颜色和emoji
+5. 如果是感悟、心情、反思类内容，type为diary
+6. 只输出JSON数组，不要输出其他内容`;
+
+  try{
+    const result = await callDeepSeek([
+      {role:'system', content: systemPrompt},
+      {role:'user', content: text}
+    ]);
+    // Extract JSON from response (in case AI wraps it in markdown)
+    let jsonStr = result.trim();
+    const jsonMatch = jsonStr.match(/\[[\s\S]*\]/);
+    if(jsonMatch) jsonStr = jsonMatch[0];
+    const items = JSON.parse(jsonStr);
+    return items.filter(item => item && (item.type==='task' || item.type==='diary'));
+  }catch(e){
+    console.error('AI parse error:', e);
+    // Fallback to rule-based parsing
+    return parseVoiceText(text);
+  }
+}
+
+// Override voice onend to optionally use AI
+let useAiForVoice = false;
+const _origOpenVoice = openVoice;
+openVoice = function(){
+  _origOpenVoice();
+  useAiForVoice = hasAiKey();
+};
+
+const _origToggleVoice = toggleVoice;
+toggleVoice = function(){
+  if(voiceRecognition){
+    voiceRecognition.stop();
+    voiceRecognition = null;
+    document.getElementById('voiceMic').classList.remove('recording');
+    document.getElementById('voiceStatus').textContent = '点击开始说话';
+    document.getElementById('voiceTranscript').readOnly = false;
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    document.getElementById('voiceStatus').textContent = '⚠️ 此浏览器不支持语音识别';
+    return;
+  }
+  voiceRecognition = new SR();
+  voiceRecognition.lang = 'zh-CN';
+  voiceRecognition.continuous = true;
+  voiceRecognition.interimResults = true;
+  let finalText = '';
+
+  voiceRecognition.onresult = function(e){
+    let interim = '';
+    for(let i = e.resultIndex; i < e.results.length; i++){
+      const t = e.results[i][0].transcript;
+      if(e.results[i].isFinal) finalText += t;
+      else interim += t;
+    }
+    document.getElementById('voiceTranscript').value = finalText + interim;
+  };
+
+  voiceRecognition.onerror = function(e){
+    if(e.error === 'not-allowed'){
+      document.getElementById('voiceStatus').textContent = '⚠️ 请允许麦克风权限';
+    } else if(e.error !== 'no-speech'){
+      document.getElementById('voiceStatus').textContent = '识别出错，请重试';
+    }
+  };
+
+  voiceRecognition.onend = async function(){
+    document.getElementById('voiceMic').classList.remove('recording');
+    document.getElementById('voiceTranscript').readOnly = false;
+    voiceRecognition = null;
+    const text = document.getElementById('voiceTranscript').value.trim();
+    if(!text) {
+      document.getElementById('voiceStatus').textContent = '点击开始说话';
+      return;
+    }
+    if(useAiForVoice && hasAiKey()){
+      document.getElementById('voiceStatus').textContent = '🤖 AI 正在解析...';
+      voiceParsed = await aiParseVoiceText(text);
+      document.getElementById('voiceStatus').textContent = '解析完成！请确认后保存';
+    } else {
+      voiceParsed = parseVoiceText(text);
+      document.getElementById('voiceStatus').textContent = '点击开始说话';
+    }
+    renderVoicePreview();
+  };
+
+  voiceRecognition.start();
+  document.getElementById('voiceMic').classList.add('recording');
+  document.getElementById('voiceStatus').textContent = '正在聆听…再点一下停止';
+};
+
+// ===== AI REVIEW =====
+function openAiReview(){
+  closeAiMenu();
+  if(!hasAiKey()){
+    openAiSettings();
+    return;
+  }
+  const date = state.currentDate;
+  const tasks = getAllTasks(date);
+  const diary = getDiary(date);
+  if(tasks.length === 0 && !diary){
+    document.getElementById('aiReviewContent').innerHTML =
+      '<div style="text-align:center;color:var(--text-dim);padding:20px">今天还没有任务或日记，先添加一些日程再来复盘吧</div>';
+  } else {
+    document.getElementById('aiReviewContent').innerHTML =
+      '<div style="text-align:center;color:var(--text-dim);padding:20px">点击下方按钮生成今日复盘</div>';
+  }
+  showSheet('aiReviewSheet');
+}
+
+async function generateAiReview(){
+  const btn = document.getElementById('aiReviewBtn');
+  const content = document.getElementById('aiReviewContent');
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+
+  const date = state.currentDate;
+  const tasks = getAllTasks(date);
+  const diary = getDiary(date);
+  const doneCount = tasks.filter(t=>t.done).length;
+  const total = tasks.length;
+  const pct = total ? Math.round(doneCount/total*100) : 0;
+
+  const taskSummary = tasks.map(t => {
+    const time = t.timeStart ? t.timeStart+(t.timeEnd?'-'+t.timeEnd:'') : '弹性';
+    return `[${t.done?'✓':'○'}] ${time} ${t.emoji||''} ${t.title}${t.desc?' ('+t.desc+')':''}`;
+  }).join('\n');
+
+  const diaryText = diary ? `心情: ${diary.mood||'未设置'}/5\n感悟: ${diary.text||'无'}\n标签: ${(diary.tags||[]).join(', ')||'无'}` : '今天没有写日记';
+
+  const systemPrompt = `你是一个温柔体贴的生活助手，帮用户做每日复盘。
+请根据今天的日程和日记，生成一段温暖、有建设性的复盘总结。
+
+要求：
+1. 先肯定今天做到的事情（具体指出哪些）
+2. 分析完成情况，给出温和的建议
+3. 如果有日记，回应日记中的情绪和感悟
+4. 给出1-2条明天的小建议
+5. 语气像朋友一样温暖，不要说教
+6. 控制在200字以内
+7. 适当使用emoji让内容更生动`;
+
+  const userPrompt = `日期: ${dateLabel(date)} (${date})
+完成进度: ${doneCount}/${total} (${pct}%)
+
+今日任务:
+${taskSummary || '今天没有安排任务'}
+
+今日日记:
+${diaryText}`;
+
+  content.innerHTML = '<div class="ai-review"><div class="ai-review-title">🤖 生成中 <span class="ai-dots"><span></span><span></span><span></span></span></div><div class="ai-review-body" id="reviewBody"></div></div>';
+
+  try{
+    await callDeepSeek([
+      {role:'system', content: systemPrompt},
+      {role:'user', content: userPrompt}
+    ], (fullText) => {
+      document.getElementById('reviewBody').textContent = fullText;
+    });
+    btn.disabled = false;
+    btn.textContent = '重新生成';
+  }catch(e){
+    content.innerHTML = '<div style="color:#ff5252;padding:16px;text-align:center">'+esc(e.message)+'</div>';
+    btn.disabled = false;
+    btn.textContent = '重试';
+  }
+}
+
+// ===== AI SMART SCHEDULE =====
+function openAiSchedule(){
+  closeAiMenu();
+  if(!hasAiKey()){
+    openAiSettings();
+    return;
+  }
+  chatMode = 'schedule';
+  chatHistory = [];
+  document.getElementById('aiChatTitle').textContent = '📅 智能排日程';
+  document.getElementById('chatMessages').innerHTML = '';
+  document.getElementById('chatInput').value = '';
+
+  const date = state.currentDate;
+  const existingTasks = getAllTasks(date);
+  const existingSummary = existingTasks.length > 0
+    ? '已有的安排：\n' + existingTasks.map(t => {
+        const time = t.timeStart ? t.timeStart+(t.timeEnd?'-'+t.timeEnd:'') : '弹性';
+        return time + ' ' + (t.emoji||'') + ' ' + t.title;
+      }).join('\n')
+    : '目前还没有安排任何任务';
+
+  addChatBubble('ai', `你好！我是你的日程助手 🤖\n\n请告诉我你今天想做什么，我来帮你合理安排时间。\n\n${existingSummary}\n\n直接说你的计划吧！`);
+  showSheet('aiChatSheet');
+}
+
+async function handleScheduleChat(userMsg){
+  const date = state.currentDate;
+  const existingTasks = getAllTasks(date);
+  const colorIds = COLORS.map(c=>c.id).join(',');
+
+  const systemPrompt = `你是一个智能日程规划助手。用户会告诉你今天想做的事情，请帮忙合理安排时间。
+日期: ${date} (${dateLabel(date)})
+可用颜色: ${colorIds}
+颜色说明: warm=日常, green=运动, blue=学习, red=重点, teal=休息, orange=社交, purple=编程/工作, night=睡眠, cyan=休息, peach=轻松
+
+已有安排:
+${existingTasks.map(t => {
+  const time = t.timeStart ? t.timeStart+(t.timeEnd?'-'+t.timeEnd:'') : '弹性';
+  return time + ' ' + t.title;
+}).join('\n') || '暂无'}
+
+规则:
+1. 合理安排时间间隔，避免太紧凑
+2. 注意劳逸结合
+3. 如果用户只说了事情没说时间，根据合理性安排
+4. 回复分两部分：先用自然语言解释安排建议，然后用一行JSON输出可导入的任务
+5. JSON格式: {"tasks":[{"title":"","timeStart":"HH:MM","timeEnd":"HH:MM","color":"颜色id","emoji":"","desc":""}]}
+6. JSON必须严格有效，时间用24小时制HH:MM
+7. 如果用户只是想聊天而不是排日程，正常聊天即可，不需要输出JSON`;
+
+  chatHistory.push({role:'user', content: userMsg});
+
+  const messages = [
+    {role:'system', content: systemPrompt},
+    ...chatHistory.slice(-10)
+  ];
+
+  addChatBubble('ai', '', true);
+  const sendBtn = document.getElementById('chatSendBtn');
+  sendBtn.disabled = true;
+
+  try{
+    const result = await callDeepSeek(messages, (fullText) => {
+      updateLastBubble(fullText);
+    });
+    chatHistory.push({role:'assistant', content: result});
+
+    // Check if response contains tasks JSON
+    const jsonMatch = result.match(/\{[\s\S]*"tasks"[\s\S]*\}/);
+    if(jsonMatch){
+      try{
+        const parsed = JSON.parse(jsonMatch[0]);
+        if(parsed.tasks && parsed.tasks.length > 0){
+          addImportButton(parsed.tasks);
+        }
+      }catch(e){}
+    }
+  }catch(e){
+    updateLastBubble('⚠️ ' + e.message);
+  }
+  sendBtn.disabled = false;
+}
+
+function addImportButton(tasks){
+  const el = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.style.cssText = 'text-align:center;padding:8px 0';
+  div.innerHTML = '<button class="btn btn-save" style="font-size:13px;padding:8px 20px" onclick=\'importAiTasks('+JSON.stringify(tasks).replace(/'/g,"\\'")+')\'>📥 导入这些任务到 '+dateLabel(state.currentDate)+'</button>';
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function importAiTasks(tasks){
+  const date = state.currentDate;
+  const existing = data.tasks[date] || [];
+  tasks.forEach(t => {
+    const isDup = existing.some(e =>
+      e.title === t.title && (e.timeStart||'') === (t.timeStart||'')
+    );
+    if(!isDup){
+      existing.push({
+        id: uid(), title: t.title || '未命名',
+        timeStart: t.timeStart || '', timeEnd: t.timeEnd || '',
+        color: t.color || 'warm', emoji: t.emoji || '📋',
+        desc: t.desc || '', done: false
+      });
+    }
+  });
+  data.tasks[date] = existing;
+  saveData();
+  render();
+  closeSheet();
+}
+
+// ===== AI CHAT =====
+function openAiChat(){
+  closeAiMenu();
+  if(!hasAiKey()){
+    openAiSettings();
+    return;
+  }
+  chatMode = 'chat';
+  chatHistory = [];
+  document.getElementById('aiChatTitle').textContent = '💬 AI 聊聊';
+  document.getElementById('chatMessages').innerHTML = '';
+  document.getElementById('chatInput').value = '';
+
+  // Build context from recent days
+  const today = state.currentDate;
+  const recentDays = [];
+  for(let i = -2; i <= 1; i++){
+    const d = new Date(parseDate(today));
+    d.setDate(d.getDate() + i);
+    const ds = fmtDate(d);
+    const tasks = getAllTasks(ds);
+    const diary = getDiary(ds);
+    if(tasks.length > 0 || diary){
+      recentDays.push({date: ds, label: dateLabel(ds), tasks, diary});
+    }
+  }
+
+  let contextInfo = '用户最近几天的日程：\n';
+  if(recentDays.length > 0){
+    recentDays.forEach(day => {
+      contextInfo += `\n${day.label} (${day.date}):\n`;
+      if(day.tasks.length > 0){
+        const done = day.tasks.filter(t=>t.done).length;
+        contextInfo += `  任务 ${done}/${day.tasks.length} 完成\n`;
+        day.tasks.forEach(t => {
+          contextInfo += `  ${t.done?'✓':'○'} ${t.timeStart||'弹性'} ${t.title}\n`;
+        });
+      }
+      if(day.diary){
+        contextInfo += `  日记: ${day.diary.text||''} (心情:${day.diary.mood||0}/5)\n`;
+      }
+    });
+  } else {
+    contextInfo += '暂无日程记录';
+  }
+
+  const systemPrompt = `你是一个温暖贴心的朋友和生活助手。你了解用户的日程和生活情况，可以：
+1. 倾听用户的想法和困扰，给出温和的建议
+2. 根据用户的日程给出个性化的生活建议
+3. 帮助用户思考和规划
+4. 在用户情绪低落时给予鼓励
+
+${contextInfo}
+
+要求：
+- 语气像朋友，温暖不说教
+- 回复简洁，控制在150字以内
+- 可以适当用emoji
+- 如果用户问到具体日程安排，可以查看上面的信息回答
+- 如果用户需要详细的规划建议，引导他们使用"智能排日程"功能`;
+
+  chatHistory.push({role:'system', content: systemPrompt});
+  addChatBubble('ai', '嗨！有什么想聊的吗？不管是今天的安排、最近的心情、还是随便聊聊都可以 😊');
+  showSheet('aiChatSheet');
+}
+
+function addChatBubble(role, text, isLoading){
+  const el = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'chat-bubble ' + role + (isLoading ? ' loading' : '');
+  if(isLoading){
+    div.innerHTML = '<span class="ai-dots"><span></span><span></span><span></span></span>';
+  } else {
+    div.textContent = text;
+  }
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function updateLastBubble(text){
+  const el = document.getElementById('chatMessages');
+  const last = el.querySelector('.chat-bubble.ai:last-child') || el.querySelector('.chat-bubble.ai.loading');
+  if(last){
+    last.classList.remove('loading');
+    last.textContent = text;
+    el.scrollTop = el.scrollHeight;
+  }
+}
+
+function chatKeyDown(e){
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    sendChatMessage();
+  }
+}
+
+async function sendChatMessage(){
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if(!msg) return;
+  input.value = '';
+
+  addChatBubble('user', msg);
+
+  if(chatMode === 'schedule'){
+    await handleScheduleChat(msg);
+  } else {
+    // Normal chat mode
+    chatHistory.push({role:'user', content: msg});
+    addChatBubble('ai', '', true);
+    const sendBtn = document.getElementById('chatSendBtn');
+    sendBtn.disabled = true;
+
+    try{
+      const result = await callDeepSeek(chatHistory.slice(-12), (fullText) => {
+        updateLastBubble(fullText);
+      });
+      chatHistory.push({role:'assistant', content: result});
+    }catch(e){
+      updateLastBubble('⚠️ ' + e.message);
+    }
+    sendBtn.disabled = false;
+  }
 }
 
 // ===== INIT =====
